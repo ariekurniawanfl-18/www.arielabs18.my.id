@@ -153,9 +153,8 @@ function getFallbackPlanText(entityType: string, entityName: string, requirement
 *   **Minggu 4:** Pengujian performa, training administrator sistem, dan peluncuran sukses!`;
 }
 
-async function startServer() {
-  const app = express();
-  app.use(express.json());
+const app = express();
+app.use(express.json());
 
   // Simple File Database to persist profile data (simulating a SQL Relational Table structure)
   const PROFILE_FILE = path.join(process.cwd(), "profile_db.json");
@@ -480,6 +479,7 @@ Panduan Menjawab:
     }
   });
 
+async function startServer() {
   // Serve static assets or use Vite development middleware
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -502,4 +502,8 @@ Panduan Menjawab:
   });
 }
 
-startServer();
+if (!process.env.VERCEL) {
+  startServer();
+}
+
+export default app;
