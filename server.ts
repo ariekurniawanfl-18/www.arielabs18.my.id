@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 
@@ -155,6 +154,30 @@ function getFallbackPlanText(entityType: string, entityName: string, requirement
 
 const app = express();
 app.use(express.json());
+
+// Normalize Vercel URLs to prevent routing mismatch
+app.use((req, res, next) => {
+  const originalUrl = req.url;
+  if (req.url.startsWith("/api/index.ts")) {
+    req.url = req.url.slice("/api/index.ts".length);
+  } else if (req.url.startsWith("/api/index")) {
+    req.url = req.url.slice("/api/index".length);
+  }
+  // Ensure appropriate prefix if it was chopped off
+  if (
+    req.url.startsWith("/chat") || 
+    req.url.startsWith("/generate-plan") || 
+    req.url.startsWith("/admin") || 
+    req.url.startsWith("/health")
+  ) {
+    req.url = "/api" + req.url;
+  }
+  if (!req.url.startsWith("/")) {
+    req.url = "/" + req.url;
+  }
+  console.log(`[Arielabs18 Route Monitor] ${req.method} ${originalUrl} -> ${req.url}`);
+  next();
+});
 
   // Simple File Database to persist profile data (simulating a SQL Relational Table structure)
   const PROFILE_FILE = path.join(process.cwd(), "profile_db.json");
@@ -482,6 +505,7 @@ Panduan Menjawab:
 async function startServer() {
   // Serve static assets or use Vite development middleware
   if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
