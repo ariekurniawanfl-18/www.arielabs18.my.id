@@ -308,16 +308,36 @@ Sertakan 4 bab bahasan utama berikut secara berurutan:
 4. Estimasi Waktu & Tahapan Pemasangan Sistem oleh Arielabs18.
 Hindari pengulangan instruksi ini dan berikan langsung hasil rancangan dari Arielabs18.`;
 
-      const response = await client.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: prompt,
+            // 1. Server Vercel bertindak sebagai jembatan aman untuk menghubungi Agen 21st Anda di cloud
+      const agentResponse = await fetch("https://21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_KEY_21ST || process.env.API_KEY_21ST}`
+        },
+        body: JSON.stringify({
+          agent: "agent", 
+          tool: "rancangBlueprint", // Menyalakan mesin simulator kustom Anda di cloud 21st
+          arguments: {
+            sektorLembaga: entityType,
+            namaLembaga: entityName,
+            kebutuhanKhusus: requirements || "Standar"
+          }
+        })
       });
 
-      res.json({
-        success: true,
-        mode: "ai",
-        planText: response.text,
-      });
+      const data = await agentResponse.json();
+
+      if (agentResponse.ok && data.output) {
+        // 2. Mengirimkan hasil cetak biru kembali ke layar visual web Anda
+        res.json({
+          success: true,
+          mode: "ai",
+          planText: data.output, 
+        });
+      } else {
+        throw new Error(data.error || "Gagal mendapatkan respon dari Agen 21st.");
+      }
 
     } catch (error: any) {
       console.error("Gemini API error during generation:", error);
@@ -478,20 +498,31 @@ Panduan Menjawab:
 - Gunakan format markdown yang rapi (bolding, kustom bullet point, headers, emoji yang wajar).
 - Jaga agar jawaban tidak terlalu berbelit-belit, langsung menawarkan solusi praktis (blueprint sewa atau WhatsApp utama jika ingin ngobrol cepat).`;
 
-      const response = await client.models.generateContent({
-        model: "gemini-3.5-flash",
-        contents: formattedContents,
-        config: {
-          systemInstruction: systemInstruction,
-          temperature: 0.7,
+            // Server Vercel bertindak sebagai jembatan aman untuk menghubungi Agen 21st Anda di cloud
+      const agentResponse = await fetch("https://21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_KEY_21ST || process.env.API_KEY_21ST}`
         },
+        body: JSON.stringify({
+          agent: "agent", // Memanggil Agen kustom Anda di cloud 21st.dev
+          message: lastUserMessage
+        })
       });
 
-      res.json({
-        success: true,
-        mode: "ai",
-        reply: response.text,
-      });
+      const data = await agentResponse.json();
+
+      if (agentResponse.ok && data.output) {
+        // Mengirimkan kembali jawaban cerdas dari Agen 21st ke gelembung chat visual Anda
+        res.json({
+          success: true,
+          mode: "ai",
+          reply: data.output, 
+        });
+      } else {
+        throw new Error(data.error || "Gagal mendapatkan balasan dari Agen 21st.");
+      }
 
     } catch (error: any) {
       console.error("Gemini API error during support chat:", error);
