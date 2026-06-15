@@ -161,25 +161,41 @@ export default function Services() {
       setStdoutLogs((prev) => [...prev, runLogs[i]]);
     }
 
-    try {
-      const response = await fetch("/api/generate-plan", {
+        try {
+      // 1. Jalur resmi langsung menembak infrastruktur cloud 21st Agents yang anti-timeout
+      const response = await fetch("https://21st.dev", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          // Mengambil kunci rahasia Anda secara aman dari Environment Variables Vercel
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_KEY_21ST || "21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535"}`
         },
         body: JSON.stringify({
-          entityType: institutionType,
-          entityName: institutionName,
-          requirements: specialNeeds
+          agent: "agent",           // Nama slug agen Anda di cloud 21st.dev
+          tool: "rancangBlueprint",  // Memanggil fungsi simulator kustom kita
+          arguments: {              // Menyerahkan parameter formulir dari layar web Anda
+            sektorLembaga: institutionType,
+            namaLembaga: institutionName,
+            kebutuhanKhusus: specialNeeds || "Standar"
+          }
         })
       });
 
       const data = await response.json();
-      if (data.success) {
-        setRenderedPlan(data);
+
+      // 2. Membaca hasil cetak biru dari server cloud untuk ditampilkan ke layar
+      if (response.ok && data.output) {
+        // Kita sesuaikan agar hasilnya pas masuk ke variabel planText bawaan visual Anda
+        const blueprintResult = {
+          success: true,
+          mode: "ai",
+          planText: data.output 
+        };
+        
+        setRenderedPlan(blueprintResult);
         setStdoutLogs((prev) => [...prev, "🚀 Blueprint berhasil diciptakan dengan aman! Menyiapkan dasbor peninjau..."]);
       } else {
-        throw new Error(data.error || "Gagal menghasilkan rancangan.");
+        throw new Error(data.error || "Gagal menghasilkan rancangan dari Agen 21st.");
       }
     } catch (err: any) {
       console.error(err);

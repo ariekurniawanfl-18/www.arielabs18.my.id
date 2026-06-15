@@ -61,33 +61,34 @@ Kami siap membantu mendiskusikan kebutuhan digitalisasi dan otomasi administrasi
     setIsLoading(true);
     setShowNotificationBadge(false);
 
-    try {
-      // Keep only recent messages for context size efficiency (up to last 12 messages)
-      const recentMessages = [...messages, userMessage].slice(-12).map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      const res = await fetch("/api/chat", {
+        try {
+      // Jalur baru langsung menembak infrastruktur cloud 21st Agents yang anti-timeout
+      const res = await fetch("https://21st.dev", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: recentMessages }),
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_KEY_21ST || "21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535"}`
+        },
+        body: JSON.stringify({ 
+          agent: "agent", // Nama slug agen Anda yang berstatus ready di cloud
+          message: text   // Perintah cetak biru kustomisasi dari pengguna
+        }),
       });
 
       const data = await res.json();
 
-      if (data.success && data.reply) {
+      if (res.ok && data.output) {
         setMessages((prev) => [
           ...prev,
           {
             id: Math.random().toString(36).substring(7),
             role: "assistant",
-            content: data.reply,
+            content: data.output, // Jawaban cerdas langsung dari Agen kustom Anda
             timestamp: new Date(),
           },
         ]);
       } else {
-        throw new Error(data.error || "Gagal mendapatkan balasan dari server.");
+        throw new Error(data.error || "Gagal mendapatkan respons dari Agen 21st.");
       }
     } catch (err) {
       console.error("Support desk chat error:", err);
@@ -448,7 +449,7 @@ Silakan langsung tanyakan pesan Anda via Chat WhatsApp Utama kami ke nomor **+62
 
             {/* FOOTER COOP PORTAL */}
             <div className="bg-gray-50 px-3 py-1.5 text-center text-[8px] text-gray-400 border-t border-gray-100 font-mono">
-              Arielabs18 Support Desk • © {currentYear} Naikoten Kupang NTT
+              Arielabs18 Support Desk • © {currentYear} Kupang - NTT
             </div>
 
           </motion.div>
