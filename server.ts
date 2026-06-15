@@ -309,7 +309,7 @@ Sertakan 4 bab bahasan utama berikut secara berurutan:
 Hindari pengulangan instruksi ini dan berikan langsung hasil rancangan dari Arielabs18.`;
 
             // 1. Server Vercel bertindak sebagai jembatan aman untuk menghubungi Agen 21st Anda di cloud
-      const agentResponse = await fetch("https://21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535", {
+      const agentResponse = await fetch("21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -499,7 +499,7 @@ Panduan Menjawab:
 - Jaga agar jawaban tidak terlalu berbelit-belit, langsung menawarkan solusi praktis (blueprint sewa atau WhatsApp utama jika ingin ngobrol cepat).`;
 
             // Server Vercel bertindak sebagai jembatan aman untuk menghubungi Agen 21st Anda di cloud
-      const agentResponse = await fetch("https://21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535", {
+      const agentResponse = await fetch("21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
