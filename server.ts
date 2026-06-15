@@ -308,27 +308,28 @@ Sertakan 4 bab bahasan utama berikut secara berurutan:
 4. Estimasi Waktu & Tahapan Pemasangan Sistem oleh Arielabs18.
 Hindari pengulangan instruksi ini dan berikan langsung hasil rancangan dari Arielabs18.`;
 
-            // 1. Server Vercel bertindak sebagai jembatan aman untuk menghubungi Agen 21st Anda di cloud
-      const agentResponse = await fetch("21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535", {
-        method: "POST",
+                  // 1. Menggunakan Axios dengan alamat gerbang URL resmi 21st di depan
+      const axios = require('axios');
+      const agentResponse = await axios.post("21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535", {
+        agent: "agent", 
+        tool: "rancangBlueprint",
+        arguments: {
+          sektorLembaga: entityType,
+          namaLembaga: entityName,
+          kebutuhanKhusus: requirements || "Standar"
+        }
+      }, {
         headers: {
           "Content-Type": "application/json",
+          // Robot kurir (process.env) otomatis menjemput kuncinya di brankas Vercel Anda
           "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_KEY_21ST || process.env.API_KEY_21ST}`
-        },
-        body: JSON.stringify({
-          agent: "agent", 
-          tool: "rancangBlueprint", // Menyalakan mesin simulator kustom Anda di cloud 21st
-          arguments: {
-            sektorLembaga: entityType,
-            namaLembaga: entityName,
-            kebutuhanKhusus: requirements || "Standar"
-          }
-        })
+        }
       });
 
-      const data = await agentResponse.json();
+      // 2. Mengambil data hasil kalkulasi dari Axios
+      const data = agentResponse.data;
 
-      if (agentResponse.ok && data.output) {
+      if (agentResponse.status === 200 && data.output) {
         // 2. Mengirimkan hasil cetak biru kembali ke layar visual web Anda
         res.json({
           success: true,
