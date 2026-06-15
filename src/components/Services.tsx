@@ -163,7 +163,7 @@ export default function Services() {
 
         try {
       // 1. Jalur resmi langsung menembak infrastruktur cloud 21st Agents yang anti-timeout
-      const response = await fetch("https://21st.dev", {
+      const response = await fetch("/api/generate-plan", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

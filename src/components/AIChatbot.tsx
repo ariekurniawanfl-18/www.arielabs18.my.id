@@ -63,7 +63,7 @@ Kami siap membantu mendiskusikan kebutuhan digitalisasi dan otomasi administrasi
 
         try {
       // Jalur baru langsung menembak infrastruktur cloud 21st Agents yang anti-timeout
-      const res = await fetch("https://21st.dev", {
+      const res = await fetch("/api/chat", {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
