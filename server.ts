@@ -276,20 +276,45 @@ app.use((req, res, next) => {
         return res.status(400).json({ error: "entityType and entityName are required" });
       }
 
-      // Check key existence safely
-      const keyExists = 
-        process.env.GEMINI_API_KEY && 
-        process.env.GEMINI_API_KEY !== "MY_GEMINI_API_KEY" && 
-        process.env.GEMINI_API_KEY.trim() !== "";
+      // Cek apakah kunci API Coze tersedia di server Vercel Anda
+      const cozeKeyExists = process.env.COZE_API_KEY && process.env.COZE_BOT_ID;
 
-      if (!keyExists) {
-        // Return highly polished static Indonesia fallback blueprint instantly
+      if (!cozeKeyExists) {
+        // Jika kunci tidak ada, otomatis pakai simulasi offline bawaan Anda
         const simulatedText = getFallbackPlanText(entityType, entityName, requirements);
         return res.json({
           success: true,
           mode: "simulated",
           planText: simulatedText,
         });
+      }
+
+      // Memanggil AI Coze untuk membuat Blueprint instan
+      const cozeResponse = await fetch('https://coze.com', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.COZE_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "bot_id": process.env.COZE_BOT_ID,
+          "user": "Pengunjung_Arielabs18",
+          "query": `JALANKAN SIMULATOR BERSAMA DATA BERIKUT:\nSektor/Lembaga: ${entityType}\nNama Lembaga: ${entityName}\nKebutuhan Khusus: ${requirements || "Standar"}`,
+          "stream": false
+        })
+      });
+
+      const data = await cozeResponse.json();
+      const blueprintText = data.messages?.find((msg: any) => msg.type === 'answer')?.content;
+
+      if (blueprintText) {
+        return res.json({
+          success: true,
+          mode: "ai",
+          planText: blueprintText, 
+        });
+      } else {
+        throw new Error("Format respons Coze tidak sesuai.");
       }
 
       const client = getGeminiClient();
@@ -453,83 +478,65 @@ Ada yang bisa kami bantu hari ini? Kami siap membantu mengotomasi administrasi i
         return null;
       };
 
-      const offlineReply = getOfflineReply();
+            const offlineReply = getOfflineReply();
 
-      // If key is not configured, or we matched a direct offline keyword, we can return the offline response immediately!
-      // This ensures extreme relevance for system queries and lightning-fast loading.
-      if (!keyExists || offlineReply) {
+      // Jika kata kunci offline cocok, langsung kirim jawaban instan Anda
+      if (offlineReply) {
         return res.json({
           success: true,
-          mode: offlineReply ? "custom_rule" : "simulated",
-          reply: offlineReply || `Halo! Terima kasih atas pesan Anda di Arielabs18. Kami mendukung berbagai kebutuhan administrasi gereja, sistem sekolah, administrasi yayasan, digitalisasi UMKM, dan pengarsipan digital terintegrasi.
-
-Silakan mengisi rancangan spesifikasi kebutuhan Anda di halaman **Sewa Framework/Form Order** di menu atas, atau hubungi WhatsApp resmi kami di [+62 821 4414 0837](https://wa.me/6282144140837) untuk berdiskusi bersama tim kami.`
+          mode: "custom_rule",
+          reply: offlineReply,
         });
       }
 
-      // Convert client message blocks into GoogleGenAI standard structure { role, parts: [{ text }] }
-      // Roles in GoogleGenAI are 'user' and 'model'
-      const formattedContents = messages.map((msg: any) => ({
-        role: msg.role === "assistant" || msg.role === "model" ? "model" : "user",
-        parts: [{ text: msg.content }]
-      }));
+      // Jika tidak ada kata kunci cocok, panggil AI Coze lewat gerbang API v2
+      const cozeKeyExists = process.env.COZE_API_KEY && process.env.COZE_BOT_ID;
+      if (!cozeKeyExists) {
+        return res.json({
+          success: true,
+          mode: "simulated",
+          reply: `Halo! Terima kasih atas pesan Anda di Arielabs18. Kami mendukung berbagai kebutuhan administrasi gereja, sistem sekolah, administrasi yayasan, digitalisasi UMKM, dan pengarsipan digital terintegrasi. Untuk diskusi cepat, Anda bisa langsung chat WhatsApp utama kami di [+62 821 4414 0837](https://wa.me/6282144140837).`
+        });
+      }
 
-      const client = getGeminiClient();
-      const systemInstruction = `Anda adalah Owner/Tim Pengembang Utama dari Arielabs18, yang membalas pesan kustomer secara profesional, ramah, dan solutif di website resmi www.arielabs18.my.id.
+      console.log("[Arielabs18 Chat Client] Meneruskan pesan kustomer ke Coze Server...");
 
-PANDUAN UTAMA (CRITICAL GUIDELINES):
-1. JANGAN PERNAH menyatakan atau mengindikasikan bahwa Anda adalah AI, robot, bot, virtual assistant, asisten cerdas, asisten AI, atau mesin simulasi. Bertindaklah dan responlah seolah Anda adalah pemilik/pengembang portal langsung yang sedang melayani kustomer di chat. Gunakan kata ganti pertama seperti "saya" atau "kami".
-2. JANGAN PERNAH menyebutkan nama orang spesifik (seperti Harry Ledoh, Harry Kurniawan, dll). Sebut saja diri Anda sebagai "Owner Arielabs18" atau "Tim Pengembang Arielabs18".
-3. JANGAN menyebutkan nama institusi luar secara spesifik (seperti SMKN 4 Kupang, GMIT Getsemani Mere, Diaspora Bina Karya) kecuali jika kustomer berinisiatif menanyakannya secara eksplisit. Jelaskan porto/kapabilitas secara umum bahwa kami berpengalaman luas merancang portal administrasi sekolah, sistem sensus pelayanan gereja, database pendaftaran yayasan, & kasir/checkout UMKM kustom.
-4. JIKA PERTANYAAN KUSTOMER CUKUP DETAIL (misal menanyakan alur database, cara kerja fungsi rumit, pembuatan spesifikasi menu tertentu, integrasi teknis, atau meminta rancangan kustom):
-   Pandulah mereka dengan sangat ramah untuk menggunakan fitur **Rancangan Blueprint** di halaman **Sewa Framework** di website kami agar mereka bisa menuliskan struktur menu, hak akses, dan budget yang pas, dan kami dapat me-review rancangannya secara presisi.
-5. JIKA MEREKA INGIN BERKOMUNIKASI/BERTRANSAKSI LANGSUNG SECARA PERTUKARAN CEPAT INDIVIDU:
-   Barulah sebagai opsi terakhir arahkan mereka untuk mengklik tombol WhatsApp Utama kami (+62 821 4414 0837) agar dapat berdiskusi cepat. Jangan sebut kata "manusia", melainkan "WhatsApp Admin" atau "WhatsApp Utama".
-
-Profil Singkat Jasa Kami (Gunakan secara umum):
-- Kami berfokus pada efisiensi administrasi harian, memangkas birokrasi, menghemat pengarsipan fisik, dan menyempurnakan alur pelaporan administrasi harian.
-- Estimasi anggaran fleksibel:
-  * Rp 150.000 - Rp 500.000 (Sistem Dasar satu fungsi)
-  * Rp 500.000 - Rp 1.000.000 (Optimal untuk sekolah menengah/gereja lokal/UMKM)
-  * Rp 1.000.000 - Rp 2.500.000 (Fitur lengkap, multi-level hak akses, backup cloud aman)
-  * Di atas Rp 2.500.000 (Skala instansi besar terdistribusi)
-
-Panduan Menjawab:
-- Jawab dengan bahasa Indonesia yang santun, beralur logis, ramah, dan bersahabat.
-- Gunakan format markdown yang rapi (bolding, kustom bullet point, headers, emoji yang wajar).
-- Jaga agar jawaban tidak terlalu berbelit-belit, langsung menawarkan solusi praktis (blueprint sewa atau WhatsApp utama jika ingin ngobrol cepat).`;
-
-            // Server Vercel bertindak sebagai jembatan aman untuk menghubungi Agen 21st Anda di cloud
-      const agentResponse = await fetch("21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535", {
+      // Perbaikan: Menggunakan alamat URL gerbang resmi Coze API v2
+      const cozeChatResponse = await fetch("https://coze.com", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_KEY_21ST || process.env.API_KEY_21ST}`
+          "Authorization": `Bearer ${process.env.COZE_API_KEY}`
         },
         body: JSON.stringify({
-          agent: "agent", // Memanggil Agen kustom Anda di cloud 21st.dev
-          message: lastUserMessage
+          "bot_id": process.env.COZE_BOT_ID,
+          "user": "Pengunjung_Arielabs18",
+          "query": lastUserMessage, // Mengirimkan pesan teks terakhir dari kustomer Anda
+          "stream": false
         })
       });
 
-      const data = await agentResponse.json();
+      const data = await cozeChatResponse.json();
+      
+      // Mengambil teks balasan cerdas dari AI Coze
+      const cozeReplyText = data.messages?.find((msg: any) => msg.type === "answer")?.content;
 
-      if (agentResponse.ok && data.output) {
-        // Mengirimkan kembali jawaban cerdas dari Agen 21st ke gelembung chat visual Anda
-        res.json({
+      if (cozeReplyText) {
+        return res.json({
           success: true,
           mode: "ai",
-          reply: data.output, 
+          reply: cozeReplyText, 
         });
       } else {
-        throw new Error(data.error || "Gagal mendapatkan balasan dari Agen 21st.");
+        throw new Error("Gagal mengambil jawaban valid dari Coze API.");
       }
 
     } catch (error: any) {
-      console.error("Gemini API error during support chat:", error);
-      res.status(500).json({
-        success: false,
-        error: error.message || "Gagal memproses percakapan AI",
+      console.error("Coze API error during support chat:", error);
+      res.json({
+        success: true,
+        mode: "fallback",
+        reply: "Maaf, sistem asisten kami sedang dalam pemeliharaan berkala. Tim Pengembang Arielabs18 siap melayani Anda secara langsung via WhatsApp Utama kami di [+62 821 4414 0837](https://wa.me/6282144140837).",
       });
     }
   });

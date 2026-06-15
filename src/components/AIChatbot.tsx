@@ -61,34 +61,34 @@ Kami siap membantu mendiskusikan kebutuhan digitalisasi dan otomasi administrasi
     setIsLoading(true);
     setShowNotificationBadge(false);
 
-        try {
-      // Jalur baru langsung menembak infrastruktur cloud 21st Agents yang anti-timeout
+            try {
+      // Mengirimkan pesan ke backend internal Arielabs18 Anda sendiri (Sangat Aman)
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.NEXT_PUBLIC_API_KEY_21ST || "21st_sk_10ffaba3d7d0f29425f97d97e5faa2dd0c1dc0c34991b13fd8f8f91447ea1535"}`
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ 
-          agent: "agent", // Nama slug agen Anda yang berstatus ready di cloud
-          message: text   // Perintah cetak biru kustomisasi dari pengguna
+          message: text,
+          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content }))
         }),
       });
 
       const data = await res.json();
 
-      if (res.ok && data.output) {
+      // Menangkap variabel 'reply' hasil olahan Coze dari server kita
+      if (res.ok && data.reply) {
         setMessages((prev) => [
           ...prev,
           {
             id: Math.random().toString(36).substring(7),
             role: "assistant",
-            content: data.output, // Jawaban cerdas langsung dari Agen kustom Anda
+            content: data.reply, 
             timestamp: new Date(),
           },
         ]);
       } else {
-        throw new Error(data.error || "Gagal mendapatkan respons dari Agen 21st.");
+        throw new Error(data.error || "Gagal mendapatkan balasan dari asisten.");
       }
     } catch (err) {
       console.error("Support desk chat error:", err);
